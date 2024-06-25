@@ -36,7 +36,7 @@ export default function Home() {
 
   const getUiDesignFromPrompt = async () => {
     const result = await model.generateContent(
-      `write dalle 3 prompt for creating  optimal, simple and eye catching UI. prompt should be in one paragraph. ${prompt}`
+      `write dalle 3 prompt for creating  optimal, simple UI design. prompt should be in one paragraph. ${prompt}`
     );
     const response = await result.response;
     const text = response.text();

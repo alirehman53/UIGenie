@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
   const headers =  {
-    "api-key": `d1e2250410344c07a98d8cdda127d822`, // Replace with your actual token
+    "api-key": process?.env?.API_KEY ?? "", // Replace with your actual token
     "x-ms-api-devportal": "dalle-3", // This is usually the default for POST requests with JSON, but it's good practice to include it
     Accept: "*",
     "Sec-Fetch-Mode": "cors",

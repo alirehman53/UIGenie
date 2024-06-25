@@ -1,113 +1,141 @@
+"use client";
 import Image from "next/image";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ChangeEvent, useState } from "react";
+import CodeDisplay from "./components/CodeDisplay";
+import { getImageFromText } from "./utils/Api";
+import OpenAI from "openai";
+import Loader from "./components/loader";
 
 export default function Home() {
+  const openai = new OpenAI({
+    apiKey: "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",
+    dangerouslyAllowBrowser: true,
+  });
+  const genAI = new GoogleGenerativeAI(
+    "AIzaSyAw9We5-vb9wM13dkDdy1KGXAOFVT1WFfc"
+  );
+  const [prompt, setPrompt] = useState("");
+  const [promptForImg, setPromptForImg] = useState("");
+  const [codeContent, setCodeContent] = useState("");
+  const [genImg, setGenImg] = useState<string | undefined>("");
+  const [codeLoading, setCodeLoading] = useState<boolean>(false)
+  const [designLoading, setDesignLoading] = useState<boolean>(false)
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const genCode = async (engineeredPrompt: string) => {
+    const result = await model.generateContent(
+      `${engineeredPrompt}. Generate Html and CSS code for the UI Description. Just the Code`
+    );
+    const response = await result.response;
+    const text = response.text();
+    setCodeContent(text);
+    setCodeLoading(false)
+  };
+
+  const getUiDesignFromPrompt = async () => {
+    const result = await model.generateContent(
+      `write dalle 3 prompt for creating  optimal, simple and eye catching UI. prompt should be in one paragraph. ${prompt}`
+    );
+    const response = await result.response;
+    const text = response.text();
+    console.log("generated prompt: ", text)
+    setPromptForImg(text);
+
+    genCode(text)
+
+    const payload = {
+      prompt: text,
+      n: 1,
+      size: "1024x1024",
+      response_format: "url",
+      user: "user123456",
+      quality: "standard",
+      style: "vivid",
+    };
+
+    const image_url: string | undefined = await getImageFromText(payload);
+    console.log(image_url);
+    setGenImg(image_url);
+    setDesignLoading(false)
+  };
+
+  const handleChange = (e: ChangeEvent) => {
+    const target = e?.target as HTMLInputElement;
+    setPrompt(`${target?.value}`);
+  };
+
+  const handleClickGen = () => {
+    if (prompt.length > 0 && prompt != null) {
+      setCodeLoading(true)
+      setDesignLoading(true)
+      getUiDesignFromPrompt();
+    }
+  };
+
+  const isLoading = () => {
+    return codeLoading || designLoading ;
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div style={{ width: "100%" }}>
+      <h2 className="title">UI Genie</h2>
+      <main
+        className="flex min-h-screen flex-col items-center p-12"
+        style={{ width: "100%" }}
+      >
+        <label>Enter your UI Description:</label>
+        <div style={{ width: "100%", textAlign: "center" }}>
+          <input
+            type="text"
+            id="input-field"
+            name="input-field"
+            placeholder="Type something..."
+            onChange={handleChange}
+          />
+          <button
+            className="button4"
+            onClick={handleClickGen}
+            disabled={prompt.length <= 0}
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            Generate
+          </button>
         </div>
-      </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+        {isLoading() ? (
+          <Loader />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              gap: "1rem",
+              width: "100%",
+              marginTop: "1rem",
+            }}
+          >
+            <div style={{ width: "50%" }}>
+              <label style={{ marginBottom: "0.5rem" }}>UI Design</label>
+              {genImg != null && genImg != "" ? (
+                <img
+                  style={{ borderRadius: "0.5rem" }}
+                  src={genImg}
+                  width={500}
+                  height={500}
+                  alt="Picture UI Design"
+                />
+              ) : (
+                <CodeDisplay codeContent={""} />
+              )}
+            </div>
+            <div style={{ width: "50%" }}>
+              <label style={{ marginBottom: "0.5rem" }}>UI Code</label>
+              <CodeDisplay codeContent={codeContent} />
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

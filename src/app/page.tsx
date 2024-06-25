@@ -6,6 +6,18 @@ import CodeDisplay from "./components/CodeDisplay";
 import { getImageFromText } from "./utils/Api";
 import OpenAI from "openai";
 import Loader from "./components/loader";
+import { insertPrompt } from "./utils/prompt";
+import HtmlCssPreviewer from "./components/HtmlCssPreviewer";
+
+const extractBodyContent = (htmlString: string) => {
+  const bodyContentMatch = htmlString.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  return bodyContentMatch ? bodyContentMatch[1] : null;
+};
+
+const extractCssContent = (cssString: string) => {
+  const cssContentMatch = cssString.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  return cssContentMatch ? cssContentMatch[1].trim() : null;
+};
 
 export default function Home() {
   const openai = new OpenAI({
@@ -19,31 +31,31 @@ export default function Home() {
   const [promptForImg, setPromptForImg] = useState("");
   const [codeContent, setCodeContent] = useState("");
   const [genImg, setGenImg] = useState<string | undefined>("");
-  const [codeLoading, setCodeLoading] = useState<boolean>(false)
-  const [designLoading, setDesignLoading] = useState<boolean>(false)
+  const [codeLoading, setCodeLoading] = useState<boolean>(false);
+  const [designLoading, setDesignLoading] = useState<boolean>(false);
+  const [isGen, setIsGen] = useState<boolean>(false);
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const genCode = async (engineeredPrompt: string) => {
+  const genCode = async () => {
     const result = await model.generateContent(
-      `${engineeredPrompt}. Generate Html and CSS code for the UI Description. Just the Code`
+      `${insertPrompt(
+        prompt
+      )}. Generate Html and CSS code for the UI Description. Styling should be in head tag. Just the Code`
     );
     const response = await result.response;
     const text = response.text();
     setCodeContent(text);
-    setCodeLoading(false)
+    setCodeLoading(false);
+    setIsGen(true);
   };
 
   const getUiDesignFromPrompt = async () => {
-    const result = await model.generateContent(
-      `write dalle 3 prompt for creating  optimal, simple UI design. prompt should be in one paragraph. ${prompt}`
-    );
+    // `write a brief prompt for creating optimal, simple UI design. prompt should be in one paragraph. ${prompt}`
+    const result = await model.generateContent(insertPrompt(prompt));
     const response = await result.response;
     const text = response.text();
-    console.log("generated prompt: ", text)
     setPromptForImg(text);
-
-    genCode(text)
 
     const payload = {
       prompt: text,
@@ -58,7 +70,7 @@ export default function Home() {
     const image_url: string | undefined = await getImageFromText(payload);
     console.log(image_url);
     setGenImg(image_url);
-    setDesignLoading(false)
+    setDesignLoading(false);
   };
 
   const handleChange = (e: ChangeEvent) => {
@@ -68,14 +80,15 @@ export default function Home() {
 
   const handleClickGen = () => {
     if (prompt.length > 0 && prompt != null) {
-      setCodeLoading(true)
-      setDesignLoading(true)
+      setCodeLoading(true);
+      setDesignLoading(true);
       getUiDesignFromPrompt();
+      genCode();
     }
   };
 
   const isLoading = () => {
-    return codeLoading || designLoading ;
+    return codeLoading || designLoading;
   };
 
   return (
@@ -116,18 +129,26 @@ export default function Home() {
             }}
           >
             <div style={{ width: "50%" }}>
-              <label style={{ marginBottom: "0.5rem" }}>UI Design</label>
-              {genImg != null && genImg != "" ? (
-                <img
-                  style={{ borderRadius: "0.5rem" }}
-                  src={genImg}
-                  width={500}
-                  height={500}
-                  alt="Picture UI Design"
-                />
-              ) : (
-                <CodeDisplay codeContent={""} />
-              )}
+              <label style={{ marginBottom: "0.5rem" }}>UI Design <span style={{fontSize: "0.9rem", fontStyle:"italic"}}>(preview of the generated code)</span></label>
+              <div style={{display: "flex", flexDirection: "column", gap: "1rem"}}>
+                {(prompt?.length>0 && isGen && !codeLoading) && (
+                  <HtmlCssPreviewer
+                    html={extractBodyContent(codeContent)}
+                    css={extractCssContent(codeContent)}
+                  />
+                )}
+                {genImg != null && genImg != "" ? (<div>
+                    <label style={{ marginBottom: "0.5rem", marginTop: "0.5rem" }}>Some More UI Design Suggestion</label>
+                    <img
+                    style={{ borderRadius: "0.5rem" }}
+                    src={genImg}
+                    alt="Picture UI Design"
+                    />
+                  </div>
+                ) : (
+                  <CodeDisplay codeContent={""} />
+                )}
+              </div>
             </div>
             <div style={{ width: "50%" }}>
               <label style={{ marginBottom: "0.5rem" }}>UI Code</label>

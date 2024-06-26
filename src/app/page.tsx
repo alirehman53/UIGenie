@@ -50,7 +50,7 @@ export default function Home() {
 
   const getUiDesignFromPrompt = async () => {
     // `write a brief prompt for creating optimal, simple UI design. prompt should be in one paragraph. ${prompt}`
-    const result = await model.generateContent(insertPrompt(prompt));
+    const result = await model.generateContent(`${insertPrompt(prompt)}. Design should be for web application`);
     const response = await result.response;
     const text = response.text();
     genCode(text);
@@ -157,7 +157,7 @@ export default function Home() {
               <CodeDisplay codeContent={codeContent} />
             </div>
             {genImg != null && genImg != "" && (
-              <div>
+              <div style={{width: "100%"}}>
                 <label style={{ marginBottom: "0.5rem", marginTop: "0.5rem" }}>
                   Some More UI Design Suggestion
                 </label>

@@ -37,11 +37,9 @@ export default function Home() {
 
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const genCode = async () => {
+  const genCode = async (revisedPrompt: string) => {
     const result = await model.generateContent(
-      `${insertPrompt(
-        prompt
-      )}. Generate Html and CSS code for the UI Description. Styling should be in head tag. Just the Code`
+      `${revisedPrompt}. Generate Html and CSS code, and avoid adding javascript code for the UI Description. Styling should be in head tag. Provide Just the Code`
     );
     const response = await result.response;
     const text = response.text();
@@ -55,6 +53,7 @@ export default function Home() {
     const result = await model.generateContent(insertPrompt(prompt));
     const response = await result.response;
     const text = response.text();
+    genCode(text);
     setPromptForImg(text);
 
     const payload = {
@@ -67,10 +66,12 @@ export default function Home() {
       style: "vivid",
     };
 
-    const image_url: string | undefined = await getImageFromText(payload);
+    const image_url: string | undefined = await getImageFromText(
+      payload,
+      setDesignLoading
+    );
     console.log(image_url);
     setGenImg(image_url);
-    setDesignLoading(false);
   };
 
   const handleChange = (e: ChangeEvent) => {
@@ -83,7 +84,6 @@ export default function Home() {
       setCodeLoading(true);
       setDesignLoading(true);
       getUiDesignFromPrompt();
-      genCode();
     }
   };
 
@@ -122,38 +122,52 @@ export default function Home() {
           <div
             style={{
               display: "flex",
-              flexDirection: "row",
-              gap: "1rem",
+              flexDirection: "column",
+              gap: "1.5rem",
               width: "100%",
               marginTop: "1rem",
             }}
           >
-            <div style={{ width: "50%" }}>
-              <label style={{ marginBottom: "0.5rem" }}>UI Design <span style={{fontSize: "0.9rem", fontStyle:"italic"}}>(preview of the generated code)</span></label>
-              <div style={{display: "flex", flexDirection: "column", gap: "1rem"}}>
-                {(prompt?.length>0 && isGen && !codeLoading) && (
+            <div style={{ width: "100%" }}>
+              <label style={{ marginBottom: "0.5rem" }}>
+                UI Design{" "}
+                <span style={{ fontSize: "0.9rem", fontStyle: "italic" }}>
+                  (preview of the generated code)
+                </span>
+              </label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                {isGen && !codeLoading ? (
                   <HtmlCssPreviewer
                     html={extractBodyContent(codeContent)}
                     css={extractCssContent(codeContent)}
                   />
-                )}
-                {genImg != null && genImg != "" ? (<div>
-                    <label style={{ marginBottom: "0.5rem", marginTop: "0.5rem" }}>Some More UI Design Suggestion</label>
-                    <img
-                    style={{ borderRadius: "0.5rem" }}
-                    src={genImg}
-                    alt="Picture UI Design"
-                    />
-                  </div>
-                ) : (
+                ): (
                   <CodeDisplay codeContent={""} />
                 )}
               </div>
             </div>
-            <div style={{ width: "50%" }}>
+            <div style={{ width: "100%" }}>
               <label style={{ marginBottom: "0.5rem" }}>UI Code</label>
               <CodeDisplay codeContent={codeContent} />
             </div>
+            {genImg != null && genImg != "" && (
+              <div>
+                <label style={{ marginBottom: "0.5rem", marginTop: "0.5rem" }}>
+                  Some More UI Design Suggestion
+                </label>
+                <img
+                  style={{ borderRadius: "0.5rem" }}
+                  src={genImg}
+                  alt="Picture UI Design"
+                />
+              </div>
+            )}
           </div>
         )}
       </main>

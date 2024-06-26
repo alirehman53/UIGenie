@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const getImageFromText = async (payload: any) => {
+const getImageFromText = async (payload: any, setDesignLoading: any) => {
   const config = {
     headers: {
       "api-key": `d1e2250410344c07a98d8cdda127d822`, // Replace with your actual token
@@ -21,7 +21,11 @@ const getImageFromText = async (payload: any) => {
     })
     .catch((error) => {
       return error;
-    });
+    })
+    .finally(()=>{
+      setDesignLoading(false)
+    })
+    ;
 };
 
 export { getImageFromText };
